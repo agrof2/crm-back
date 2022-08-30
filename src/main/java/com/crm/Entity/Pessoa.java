@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import lombok.AllArgsConstructor;
@@ -34,6 +35,7 @@ import lombok.ToString;
 public class Pessoa implements EntityBasic {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
+	@Type(type="org.hibernate.type.UUIDCharType")
 	private UUID id;
 	
 	@NotNull

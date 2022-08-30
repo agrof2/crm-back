@@ -41,7 +41,10 @@ public class PessoaService {
     }
 
     public Page<Pessoa> list(Pageable pageable, String nome, String cpf){
-        Page<Pessoa> list = pessoaRepository.findByNomeLikeOrCpfLike(nome, cpf, pageable);
+        Page<Pessoa> list = Page.empty();
+        if (StringUtils.hasText(nome)
+         | StringUtils.hasText(cpf)) list = pessoaRepository.findByNomeLikeOrCpfLike(nome, cpf, pageable);
+        else list = pessoaRepository.findAll(pageable);
         if (list.hasContent()) return list;
         return Page.empty();
     }
@@ -68,26 +71,28 @@ public class PessoaService {
     }
 
     public Pessoa update(UUID id, PessoaForm pForm) {
-        if (Objects.isNull(id)){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id Inválido!");
-        }
+        Pessoa p = get(id);
         if (!ValidarCPF.isCPF(pForm.getCpf())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF Inválido!");
         } else {
-            Optional<Pessoa> hasCPF = pessoaRepository.findByCpf(LocalizarTextos.extractText(pForm.getCpf(), LocalizarTextos.APENAS_NUMEROS_SEM_ESPACO_OU_TABULACOES));
-            if (hasCPF.isPresent() && !id.equals(hasCPF.get().getId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já existe!");
+            if (!p.getCpf().equalsIgnoreCase(LocalizarTextos.extractText(pForm.getCpf(), LocalizarTextos.APENAS_NUMEROS_SEM_ESPACO_OU_TABULACOES))) {
+                Optional<Pessoa> hasCPF = pessoaRepository.findByCpf(LocalizarTextos.extractText(pForm.getCpf(), LocalizarTextos.APENAS_NUMEROS_SEM_ESPACO_OU_TABULACOES));
+                if (hasCPF.isPresent() && !id.equals(hasCPF.get().getId())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já existe!");
+                }
             }
         }
         if (StringUtils.hasText(pForm.getEmail()) && !LocalizarTextos.isEmail(pForm.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail Inválido!");
         }
-        Optional<Pessoa> hasNome = pessoaRepository.findByNome(pForm.getNome());
-        if (hasNome.isPresent() && !id.equals(hasNome.get().getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pessoa já existe!");
+        if (!p.getNome().equalsIgnoreCase(pForm.getNome())) {
+            Optional<Pessoa> hasNome = pessoaRepository.findByNome(pForm.getNome());
+            if (hasNome.isPresent() && !id.equals(hasNome.get().getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pessoa já existe!");
+            }
         }
 
-        Pessoa p = pessoaMapper.pessoaFormToPessoa(pForm);
+        p = pessoaMapper.pessoaFormToPessoa_Update(pForm, p);
         return pessoaRepository.save(p);
     }
 }
